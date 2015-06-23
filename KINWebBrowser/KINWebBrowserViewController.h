@@ -117,6 +117,8 @@
 
 #pragma mark - Public Interface
 
+- (void)loadHTMLString:(NSString *)htmlString;
+
 // Load a NSURL to webView
 // Can be called any time after initialization
 - (void)loadURL:(NSURL *)URL;
