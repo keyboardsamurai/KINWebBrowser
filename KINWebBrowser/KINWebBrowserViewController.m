@@ -55,24 +55,36 @@ static void *KINWebBrowserContext = &KINWebBrowserContext;
 #pragma mark - Static Initializers
 
 + (KINWebBrowserViewController *)webBrowser {
-    KINWebBrowserViewController *webBrowserViewController = [KINWebBrowserViewController webBrowserWithConfiguration:nil];
+    KINWebBrowserViewController *webBrowserViewController = [KINWebBrowserViewController webBrowserWithOptions:nil];
     return webBrowserViewController;
 }
 
-+ (KINWebBrowserViewController *)webBrowserWithConfiguration:(WKWebViewConfiguration *)configuration {
-    KINWebBrowserViewController *webBrowserViewController = [[self alloc] initWithConfiguration:configuration];
++ (KINWebBrowserViewController *)webBrowserWithOptions:(NSDictionary *)options {
+    KINWebBrowserViewController *webBrowserViewController = [[KINWebBrowserViewController alloc] initWithOptions:options];
     return webBrowserViewController;
 }
+
 
 + (UINavigationController *)navigationControllerWithWebBrowser {
-    KINWebBrowserViewController *webBrowserViewController = [[self alloc] initWithConfiguration:nil];
-    return [KINWebBrowserViewController navigationControllerWithBrowser:webBrowserViewController];
+    KINWebBrowserViewController *webBrowserViewController = [[KINWebBrowserViewController alloc] init];
+    
+    UIBarButtonItem *doneButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:webBrowserViewController action:@selector(doneButtonPressed:)];
+    [webBrowserViewController.navigationItem setRightBarButtonItem:doneButton];
+    
+    UINavigationController *navigationController = [[UINavigationController alloc] initWithRootViewController:webBrowserViewController];
+    return navigationController;
 }
 
-+ (UINavigationController *)navigationControllerWithWebBrowserWithConfiguration:(WKWebViewConfiguration *)configuration {
-    KINWebBrowserViewController *webBrowserViewController = [[self alloc] initWithConfiguration:configuration];
-    return [KINWebBrowserViewController navigationControllerWithBrowser:webBrowserViewController];
++ (UINavigationController *)navigationControllerWithWebBrowserWithOptions:(NSDictionary *)options {
+    KINWebBrowserViewController *webBrowserViewController = [[KINWebBrowserViewController alloc] initWithOptions:options];
+    
+    UIBarButtonItem *doneButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:webBrowserViewController action:@selector(doneButtonPressed:)];
+    [webBrowserViewController.navigationItem setRightBarButtonItem:doneButton];
+    
+    UINavigationController *navigationController = [[UINavigationController alloc] initWithRootViewController:webBrowserViewController];
+    return navigationController;
 }
+
 
 + (UINavigationController *)navigationControllerWithBrowser:(KINWebBrowserViewController *)webBrowser {
     UIBarButtonItem *doneButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:webBrowser action:@selector(doneButtonPressed:)];
@@ -84,10 +96,39 @@ static void *KINWebBrowserContext = &KINWebBrowserContext;
 
 #pragma mark - Initializers
 
-- (id)init {
-    return [self initWithConfiguration:nil];
+- (id)initWithOptions:(NSDictionary *)options {
+    self = [super init];
+    if(self) {
+        self.options = options;
+    }
+    return self;
 }
 
+
+#pragma mark - Access Options
+
+- (id)valueForOption:(NSString *)option {
+    if(self.options && [self.options objectForKey:option]) {
+        return [self.options objectForKey:option];
+    }
+    else {
+        return [[self defaultOptions] objectForKey:option];
+    }
+}
+
+- (NSDictionary *)defaultOptions {
+    return
+    @{
+      KINWebBrowserShowsActionButton : @YES,
+      KINWebBrowserShowsProgressView : @YES,
+      KINWebBrowserShowsPageTitleInNavigationBar : @YES,
+      KINWebBrowserShowsPageURLInNavigationBar : @NO,
+      KINWebBrowserRestoresNavigationBarState : @YES,
+      KINWebBrowserRestoresToolbarState : @YES
+      };
+}
+
+/*
 - (id)initWithConfiguration:(WKWebViewConfiguration *)configuration {
     self = [super init];
     if(self) {
@@ -112,7 +153,7 @@ static void *KINWebBrowserContext = &KINWebBrowserContext;
     }
     return self;
 }
-
+*/
 #pragma mark - View Lifecycle
 
 - (void)viewDidLoad {
@@ -150,6 +191,10 @@ static void *KINWebBrowserContext = &KINWebBrowserContext;
     [self.progressView setAutoresizingMask:UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin];
 }
 
+- (void)viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+}
+
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     
@@ -164,11 +209,15 @@ static void *KINWebBrowserContext = &KINWebBrowserContext;
 - (void)viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
     
-    [self.navigationController setNavigationBarHidden:self.previousNavigationControllerNavigationBarHidden animated:animated];
+    if([[self valueForOption:KINWebBrowserRestoresNavigationBarState] boolValue]) {
+        [self.navigationController setNavigationBarHidden:self.previousNavigationControllerNavigationBarHidden animated:animated];
+    }
     
-    [self.navigationController setToolbarHidden:self.previousNavigationControllerToolbarHidden animated:animated];
+    if([[self valueForOption:KINWebBrowserRestoresToolbarState] boolValue]) {
+        [self.navigationController setToolbarHidden:self.previousNavigationControllerToolbarHidden animated:animated];
+    }
     
-    [self.uiWebView setDelegate:nil];
+    [self.webView setDelegate:nil];
     [self.progressView removeFromSuperview];
 }
 
@@ -384,9 +433,10 @@ static void *KINWebBrowserContext = &KINWebBrowserContext;
     
     [self setToolbarItems:barButtonItems animated:YES];
     
+/* 
     self.tintColor = self.tintColor;
     self.barTintColor = self.barTintColor;
-    
+*/  
     
 }
 
